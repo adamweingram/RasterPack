@@ -3,3 +3,4 @@ rasterio==1.1.5
 fiona==1.8.13.post1
 click==7.1.2
 toml==0.10.1
+scipy==1.6.0
