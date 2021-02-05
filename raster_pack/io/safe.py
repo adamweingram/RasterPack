@@ -67,13 +67,9 @@ def create_dataset(path: str, datatype: Optional[object] = None) -> Dataset:
 
         # Assemble metadata list
         meta = {
-            "resolution": deepcopy(dataset.res),
-            "nodata": dataset.meta["nodata"],
-            "width": dataset.meta["width"],
-            "height": dataset.meta["height"],
-            "crs": deepcopy(dataset.meta["crs"]),
-            "transform": deepcopy(dataset.meta["transform"])
+            "resolution": deepcopy(dataset.res)
         }
+        profile = deepcopy(dataset.profile)
 
         # Create and return new dataset
-        return Dataset(profile=dataset.profile, bands=output_dict, meta=meta)
+        return Dataset(profile=profile, bands=output_dict, meta=meta)
