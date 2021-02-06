@@ -33,6 +33,7 @@ def output_gtiff(dataset: Dataset, output_path: str, datatype: Optional[str] = r
         )
 
         # Read each layer and write it to stack
+        logger.debug("Started writing to file...")
         with rio.open(output_path, 'w', **dataset.profile) as dst:
             for ident, raw_data in enumerate(dataset.bands.values(), start=1):
                 dst.write_band(ident, raw_data.astype(datatype))
