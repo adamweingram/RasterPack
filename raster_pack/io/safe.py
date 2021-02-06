@@ -63,7 +63,7 @@ def create_dataset(path: str, datatype: Optional[object] = None) -> Dataset:
                 datatype = dataset.dtypes[i]
 
             # Read from the dataset into the output dictionary
-            output_dict["{}".format(band_index)] = dataset.read(band_index).astype(datatype)
+            output_dict["{}".format(dataset.descriptions[i])] = dataset.read(band_index).astype(datatype)
 
         # Assemble metadata list
         meta = {
