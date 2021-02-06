@@ -13,9 +13,7 @@ from raster_pack.dataset.dataset import Dataset
 logger = logging.getLogger("raster_pack.processes.resample.scipy_resample")
 
 
-def scipy_resample(dataset: Dataset,
-                   target_resolution: float,
-                   resampling_method: Optional[str] = "nearest") -> Dataset:
+def scipy_resample(dataset: Dataset, target_resolution: float, resampling_method: Optional[str] = "nearest") -> Dataset:
     """Resample a dataset to a target resolution
 
     NOTE: The dataset is PASS BY REFERENCE so the dataset you use with this function
