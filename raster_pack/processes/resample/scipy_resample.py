@@ -56,9 +56,6 @@ def scipy_resample(dataset: Dataset, target_resolution: float, resampling_method
 
     # Run resampling
     for key in dataset.bands.keys():
-        dataset.bands[key] = np.array(list(map(
-            lambda layer: zoom(layer, scaling, order=0, mode=resampling_method),
-            dataset.bands[key]
-        )))
+        dataset.bands[key] = zoom(input=dataset.bands[key], zoom=(scaling, scaling), order=0, mode=resampling_method)
 
     return dataset
