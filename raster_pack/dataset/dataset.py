@@ -45,6 +45,7 @@ def combine(first: Dataset, second: Dataset) -> Dataset:
 
     # Check for compatibility
     # [TODO] Dataset combination checks need to be much more thorough
+    # [FIXME] Current combine implementation doesn't actually catch different-dimension ndarrays!
     if first.meta["resolution"] != second.meta["resolution"] or \
             first.profile["crs"] != second.profile["crs"] or \
             first.profile["height"] != second.profile["height"] or \
