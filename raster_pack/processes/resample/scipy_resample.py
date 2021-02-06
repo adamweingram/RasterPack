@@ -13,7 +13,8 @@ from raster_pack.dataset.dataset import Dataset
 logger = logging.getLogger("raster_pack.processes.resample.scipy_resample")
 
 
-def scipy_resample(dataset: Dataset, target_resolution: float, resampling_method: Optional[str] = "nearest") -> Dataset:
+def scipy_resample(dataset: Dataset, target_resolution: float, resampling_method: Optional[str] = "nearest",
+                   output_datatype: Optional[np.dtype] = np.float32) -> Dataset:
     """Resample a dataset to a target resolution
 
     NOTE: The dataset is PASS BY REFERENCE so the dataset you use with this function
@@ -22,6 +23,7 @@ def scipy_resample(dataset: Dataset, target_resolution: float, resampling_method
     :param dataset: The dataset to resample
     :param target_resolution: The target resolution (in relative units: e.g. 10m -> 60m means you would enter 60)
     :param resampling_method: The scipy resampling method
+    :param output_datatype: (Optional) Datatype to use for raster manipulation and output (DEFAULTS TO float32)
     :return: The resampled dataset (SEE NOTE! THIS IS A POINTER TO THE MODIFIED ORIGINAL!)
     """
 
@@ -47,6 +49,10 @@ def scipy_resample(dataset: Dataset, target_resolution: float, resampling_method
         width=new_width
     )
     dataset.meta["resolution"] = new_resolution
+
+    # Change datatype of all bands
+    for band_id, band_value in dataset.bands.items():
+        dataset.bands[band_id] = band_value.astype(output_datatype)
 
     # Run resampling
     for key in dataset.bands.keys():
