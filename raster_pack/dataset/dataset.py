@@ -22,20 +22,42 @@ class Dataset:
         self.bands = bands
         self.meta = meta
 
-    def combine(self, dataset: object) -> object:
-        """Combine this dataset with another compatible dataset
 
-        This function simply checks for basic compatibility (resolution, array size,
-        etc.) and then combines the list of bands.
+def combine(first: Dataset, second: Dataset) -> Dataset:
+    """Combine one dataset with another compatible dataset
 
-        :param dataset: The dataset to combine with
-        :return: This dataset with the new dataset added
-        """
+    This function simply checks for basic compatibility (resolution, array size,
+    etc.) and then combines the list of bands. Also note that the function
+    makes a deep copy of both datasets so a clean output can be created. This
+    leads to a possible ballooning in memory!
 
-        # Check for compatibility
-        # [TODO] Dataset combination checks need to be much more thorough
-        if self.meta["resolution"] != dataset.meta["resolution"] or self.profile["height"] != dataset.profile["height"]:
-            raise RuntimeError("Tried to combine two datasets that are not compatible!")
+    :param first: The dataset that the second will be combined into
+    :param second: The dataset that will be combined with the first
+    :return: This dataset with the new dataset added
+    """
 
-        # Actually copy over (deep copy, EXPENSIVE)
-        self.bands.update(deepcopy(dataset.bands))
+    # Combination with "None" should return the original
+    if first is None:
+        return second
+
+    if second is None:
+        return first
+
+    # Check for compatibility
+    # [TODO] Dataset combination checks need to be much more thorough
+    if first.meta["resolution"] != second.meta["resolution"] or \
+            first.profile["crs"] != second.profile["crs"] or \
+            first.profile["height"] != second.profile["height"] or \
+            first.profile["width"] != second.profile["width"]:
+        raise RuntimeError("Tried to combine two datasets that are not compatible!")
+
+    # Create a deep copy of datasets (Caution, EXPENSIVE!) and combine
+    # [TODO] Make clean combination of datasets less resource-intensive
+    first_bands = deepcopy(first.bands)
+    second_bands = deepcopy(second.bands)
+
+    # Actually copy over
+    first.bands = {**first_bands, **second_bands}
+
+    # Return the first dataset with the second copied into it
+    return first
