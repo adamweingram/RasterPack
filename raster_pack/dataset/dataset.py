@@ -23,7 +23,7 @@ class Dataset:
         self.meta = meta
 
 
-def combine(first: Dataset, second: Dataset) -> Dataset:
+def combine(first: Dataset, second: Dataset, skip_duplicates: Optional[bool] = False) -> Dataset:
     """Combine one dataset with another compatible dataset
 
     This function simply checks for basic compatibility (resolution, array size,
@@ -33,6 +33,7 @@ def combine(first: Dataset, second: Dataset) -> Dataset:
 
     :param first: The dataset that the second will be combined into
     :param second: The dataset that will be combined with the first
+    :param skip_duplicates: (Optional) Whether or not to skip duplicate bands (Default False)
     :return: This dataset with the new dataset added
     """
 
@@ -58,9 +59,14 @@ def combine(first: Dataset, second: Dataset) -> Dataset:
     second_bands = deepcopy(second.bands)
 
     # Test for bands with the same name to avoid overwriting data
+    # If the user wants to skip duplicates, remove the duplicate entry from the second
+    # band dictionary.
     for key in first_bands.keys():
         if key in second_bands.keys():
-            raise RuntimeError("Tried to combine two datasets with matching band keys!")
+            if not skip_duplicates:
+                raise RuntimeError("Tried to combine two datasets with matching band keys!")
+            else:
+                del second_bands[key]
 
     # Actually copy over
     first.bands = {**first_bands, **second_bands}
