@@ -10,7 +10,7 @@ from copy import deepcopy
 from raster_pack.dataset.dataset import Dataset
 
 # Setup Logger
-logger = logging.getLogger("raster_pack.processes.resample.scipy_resample")
+logger = logging.getLogger("raster_pack.processes.resample.rasterio_resample")
 
 
 def rasterio_resample(dataset: Dataset, target_resolution: float, new_nodata: Optional[np.dtype] = None,
