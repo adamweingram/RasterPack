@@ -57,6 +57,11 @@ def combine(first: Dataset, second: Dataset) -> Dataset:
     first_bands = deepcopy(first.bands)
     second_bands = deepcopy(second.bands)
 
+    # Test for bands with the same name to avoid overwriting data
+    for key in first_bands.keys():
+        if key in second_bands.keys():
+            raise RuntimeError("Tried to combine two datasets with matching band keys!")
+
     # Actually copy over
     first.bands = {**first_bands, **second_bands}
 
