@@ -122,3 +122,22 @@ def calc_evi2(nir_band: np.ndarray, red_band: np.ndarray, gain: float = 2.4, L: 
 
     # Calculate EVI2
     return gain * (nir_band - red_band) / (nir_band + red_band + L)
+
+
+def calc_rendvi1(nir_band: np.ndarray, vr2: np.ndarray):
+    """Calculates the red edge NDVI1 for two arrays
+
+        :param nir_band: Near Infrared Band
+        :param vr2: [TODO] Write description of "VR2" band
+        :return: Single band containing reNDVI1
+        """
+
+    # Change type to float
+    nir_band = nir_band.astype(float)
+    vr2 = vr2.astype(float)
+
+    # Ignore Division by 0
+    np.seterr(divide='ignore', invalid='ignore')
+
+    # Calculate reNDVI1
+    return (nir_band - vr2) / (nir_band + vr2)
