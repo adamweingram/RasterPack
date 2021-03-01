@@ -141,3 +141,22 @@ def calc_rendvi1(nir_band: np.ndarray, vr2: np.ndarray):
 
     # Calculate reNDVI1
     return (nir_band - vr2) / (nir_band + vr2)
+
+
+def calc_rendvi2(nir_band: np.ndarray, vr3: np.ndarray):
+    """Calculates the red edge NDVI2 for two arrays
+
+        :param nir_band: Near Infrared Band
+        :param vr3: [TODO] Write description of "VR3" band
+        :return: Single band containing reNDVI1
+        """
+
+    # Change type to float
+    nir_band = nir_band.astype(float)
+    vr3 = vr3.astype(float)
+
+    # Ignore Division by 0
+    np.seterr(divide='ignore', invalid='ignore')
+
+    # Calculate reNDVI2
+    return (nir_band - vr3) / (nir_band + vr3)
