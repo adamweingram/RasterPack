@@ -127,10 +127,10 @@ def calc_evi2(nir_band: np.ndarray, red_band: np.ndarray, gain: float = 2.4, L: 
 def calc_rendvi1(nir_band: np.ndarray, vr2: np.ndarray) -> np.ndarray:
     """Calculates the red edge NDVI1 for two arrays
 
-        :param nir_band: Near Infrared Band
-        :param vr2: [TODO] Write description of "VR2" band
-        :return: Single band containing reNDVI1
-        """
+    :param nir_band: Near Infrared Band
+    :param vr2: [TODO] Write description of "VR2" band
+    :return: Single band containing reNDVI1
+    """
 
     # Change type to float
     nir_band = nir_band.astype(float)
@@ -146,10 +146,10 @@ def calc_rendvi1(nir_band: np.ndarray, vr2: np.ndarray) -> np.ndarray:
 def calc_rendvi2(nir_band: np.ndarray, vr3: np.ndarray) -> np.ndarray:
     """Calculates the red edge NDVI2 for two arrays
 
-        :param nir_band: Near Infrared Band
-        :param vr3: [TODO] Write description of "VR3" band
-        :return: Single band containing reNDVI1
-        """
+    :param nir_band: Near Infrared Band
+    :param vr3: [TODO] Write description of "VR3" band
+    :return: Single band containing reNDVI1
+    """
 
     # Change type to float
     nir_band = nir_band.astype(float)
@@ -165,10 +165,10 @@ def calc_rendvi2(nir_band: np.ndarray, vr3: np.ndarray) -> np.ndarray:
 def calc_ndwi(green_band: np.ndarray, nir_band: np.ndarray) -> np.ndarray:
     """Calculates the NDWI for two arrays
 
-            :param green_band: Green Band
-            :param nir_band: Near Infrared Band
-            :return: Single band containing NDWI
-            """
+    :param green_band: Green Band
+    :param nir_band: Near Infrared Band
+    :return: Single band containing NDWI
+    """
 
     # Change type to float
     green_band = green_band.astype(float)
