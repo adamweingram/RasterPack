@@ -124,7 +124,7 @@ def calc_evi2(nir_band: np.ndarray, red_band: np.ndarray, gain: float = 2.4, L: 
     return gain * (nir_band - red_band) / (nir_band + red_band + L)
 
 
-def calc_rendvi1(nir_band: np.ndarray, vr2: np.ndarray):
+def calc_rendvi1(nir_band: np.ndarray, vr2: np.ndarray) -> np.ndarray:
     """Calculates the red edge NDVI1 for two arrays
 
         :param nir_band: Near Infrared Band
@@ -143,7 +143,7 @@ def calc_rendvi1(nir_band: np.ndarray, vr2: np.ndarray):
     return (nir_band - vr2) / (nir_band + vr2)
 
 
-def calc_rendvi2(nir_band: np.ndarray, vr3: np.ndarray):
+def calc_rendvi2(nir_band: np.ndarray, vr3: np.ndarray) -> np.ndarray:
     """Calculates the red edge NDVI2 for two arrays
 
         :param nir_band: Near Infrared Band
