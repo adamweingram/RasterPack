@@ -160,3 +160,22 @@ def calc_rendvi2(nir_band: np.ndarray, vr3: np.ndarray) -> np.ndarray:
 
     # Calculate reNDVI2
     return (nir_band - vr3) / (nir_band + vr3)
+
+
+def calc_ndwi(green_band: np.ndarray, nir_band: np.ndarray) -> np.ndarray:
+    """Calculates the NDWI for two arrays
+
+            :param green_band: Green Band
+            :param nir_band: Near Infrared Band
+            :return: Single band containing NDWI
+            """
+
+    # Change type to float
+    green_band = green_band.astype(float)
+    nir_band = nir_band.astype(float)
+
+    # Ignore Division by 0
+    np.seterr(divide='ignore', invalid='ignore')
+
+    # Calculate NDWI
+    return (green_band - nir_band) / (green_band + nir_band)
