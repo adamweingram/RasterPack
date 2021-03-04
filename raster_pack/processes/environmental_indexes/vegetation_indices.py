@@ -198,3 +198,22 @@ def calc_ndmi(nir_band: np.ndarray, swir_band: np.ndarray) -> np.ndarray:
 
     # Calculate NDMI
     return (nir_band - swir_band) / (nir_band + swir_band)
+
+
+def calc_mndwi(green_band: np.ndarray, swir_band: np.ndarray) -> np.ndarray:
+    """Calculates the MNDWI for two arrays
+
+    :param green_band: Green Band
+    :param swir_band: Short-Wave Infrared Band
+    :return: Single band containing MNDWI
+    """
+
+    # Change type to float
+    green_band = green_band.astype(float)
+    swir_band = swir_band.astype(float)
+
+    # Ignore Division by 0
+    np.seterr(divide='ignore', invalid='ignore')
+
+    # Calculate MNDWI
+    return (green_band - swir_band) / (green_band + swir_band)
