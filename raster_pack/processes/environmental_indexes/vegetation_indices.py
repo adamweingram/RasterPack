@@ -217,3 +217,24 @@ def calc_mndwi(green_band: np.ndarray, swir_band: np.ndarray) -> np.ndarray:
 
     # Calculate MNDWI
     return (green_band - swir_band) / (green_band + swir_band)
+
+
+def calc_mtci(vr1: np.ndarray, vr2: np.ndarray, red_band: np.ndarray) -> np.ndarray:
+    """Calculates the MTCI for two arrays
+
+    :param vr1: [TODO] Write description for "VR1" band
+    :param vr2: [TODO] Write description for "VR2" band
+    :param red_band: Red Band
+    :return: Single band containing MTCI
+    """
+
+    # Change type to float
+    vr1 = vr1.astype(float)
+    vr2 = vr2.astype(float)
+    red_band = red_band.astype(float)
+
+    # Ignore Division by 0
+    np.seterr(divide='ignore', invalid='ignore')
+
+    # Calculate MTCI
+    return (vr2 - vr1)/(vr1 - red_band)
