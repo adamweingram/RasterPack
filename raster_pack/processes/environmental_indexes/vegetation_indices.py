@@ -44,8 +44,8 @@ def calc_wavi(nir_band: np.ndarray, blue_band: np.ndarray, L: float = 0.5) -> np
     :return: Single band containing WAVI
     """
 
-    nir_band = nir_band.astype(float) / 1000
-    blue_band = blue_band.astype(float) / 1000
+    nir_band = nir_band.astype(float)
+    blue_band = blue_band.astype(float)
 
     return (1 + L) * ((nir_band - blue_band) / (nir_band + blue_band + L))
 
@@ -90,9 +90,9 @@ def calc_evi(
     """
 
     # Change type to float
-    nir_band = nir_band.astype(float) / 1000
-    red_band = red_band.astype(float) / 1000
-    blue_band = blue_band.astype(float) / 1000
+    nir_band = nir_band.astype(float)
+    red_band = red_band.astype(float)
+    blue_band = blue_band.astype(float)
 
     # Ignore Division by 0
     np.seterr(divide='ignore', invalid='ignore')
