@@ -1,8 +1,11 @@
 # External Imports
 import logging
+import re
+
 import rasterio as rio
 from typing import Optional, List
 from copy import deepcopy
+from datetime import datetime
 
 # Internal Imports
 from raster_pack.dataset.dataset import Dataset
@@ -65,9 +68,21 @@ def create_dataset(path: str, datatype: Optional[object] = None) -> Dataset:
             # Read from the dataset into the output dictionary
             output_dict["{}".format(dataset.descriptions[i])] = dataset.read(band_index).astype(datatype)
 
+        # Gather data from product name code
+        name_butchered = re.search(
+            pattern=r'S(?P<mission_id>[A-Z,0-9]{2})_MSI(?P<product_level>[A-Z,0-9]{3})_(?P<sensor_start_datetime>[0-9]{8}T[0-9]{6})_N(?P<processing_baseline_number>[0-9]{4})_R(?P<relative_orbit_number>[0-9]{3})_T(?P<tile_id>[A-Z,0-9]{5})_(?P<product_discriminator>[0-9]{8}T[0-9]{6}).SAFE',
+            string=str(dataset.name)
+        )
+
         # Assemble metadata list
         meta = {
-            "resolution": deepcopy(dataset.res)
+            "date": datetime.strptime(name_butchered.group('sensor_start_datetime'), '%Y%m%dT%H%M%S'),  # Get only the date using a regex
+            "resolution": deepcopy(dataset.res),
+            "mission_id": str(name_butchered.group('mission_id')),
+            "product_level": str(name_butchered.group('product_level')),
+            "processing_baseline_number": str(name_butchered.group('processing_baseline_number')),
+            "relative_orbit_number": str(name_butchered.group('relative_orbit_number')),
+            "product_discriminator": str(name_butchered.group('product_discriminator'))
         }
         profile = deepcopy(dataset.profile)
 
