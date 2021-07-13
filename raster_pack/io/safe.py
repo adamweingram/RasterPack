@@ -69,6 +69,7 @@ def create_dataset(path: str, datatype: Optional[object] = None) -> Dataset:
             output_dict["{}".format(dataset.descriptions[i])] = dataset.read(band_index).astype(datatype)
 
         # Gather data from product name code
+        # [FIXME] THE DATA GATHERING REGEX _IS NOT CORRECT_ FOR DATASETS FROM BEFORE 2016-12-06!!!
         name_butchered = re.search(
             pattern=r'S(?P<mission_id>[A-Z,0-9]{2})_MSI(?P<product_level>[A-Z,0-9]{3})_(?P<sensor_start_datetime>[0-9]{8}T[0-9]{6})_N(?P<processing_baseline_number>[0-9]{4})_R(?P<relative_orbit_number>[0-9]{3})_T(?P<tile_id>[A-Z,0-9]{5})_(?P<product_discriminator>[0-9]{8}T[0-9]{6}).SAFE',
             string=str(dataset.name)
