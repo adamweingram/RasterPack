@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 # External Imports
 import numpy as np
 import rasterio as rio
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 from copy import deepcopy
 
 
@@ -9,18 +11,22 @@ class Dataset:
     profile: rio.profiles.Profile
     bands: Dict[str, np.ndarray]
     meta: Optional[dict]
+    subdatasets: Optional[List[Dataset]]
 
-    def __init__(self, profile: rio.profiles.Profile, bands: Dict[str, np.ndarray], meta: Optional[dict]):
+    def __init__(self, profile: rio.profiles.Profile, bands: Dict[str, np.ndarray], meta: Optional[dict] = None,
+                 subdatasets: Optional[List[Dataset]] = None):
         """Instantiate a Dataset object
 
         :param profile: Profile of the dataset
         :param bands: A dictionary containing the band data associated with keys
         :param meta: (Optional) A dictionary containing metadata about the dataset
+        :param subdatasets: (Optional) A list containing additional subdataset Dataset objects
         """
 
         self.profile = profile
         self.bands = bands
         self.meta = meta
+        self.subdatasets = subdatasets
 
 
 def combine(first: Dataset, second: Dataset, skip_duplicates: Optional[bool] = False) -> Dataset:
@@ -53,7 +59,7 @@ def combine(first: Dataset, second: Dataset, skip_duplicates: Optional[bool] = F
             first.profile["width"] != second.profile["width"]:
         raise RuntimeError("Tried to combine two datasets that are not compatible!")
 
-    # Create a deep copy of datasets (Caution, EXPENSIVE!) and combine
+    # Create a deep copy of datasets (Caution, EXPENSIVE!)
     # [TODO] Make clean combination of datasets less resource-intensive
     first_bands = deepcopy(first.bands)
     second_bands = deepcopy(second.bands)
@@ -70,6 +76,13 @@ def combine(first: Dataset, second: Dataset, skip_duplicates: Optional[bool] = F
 
     # Actually copy over
     first.bands = {**first_bands, **second_bands}
+
+    # Create a deep copy of all the subdatasets (Caution, potentially EXTREMELY EXPENSIVE!)
+    first_subdatasets = deepcopy(first.subdatasets) if first.subdatasets is not None else {}
+    second_subdatasets = deepcopy(second.subdatasets) if second.subdatasets is not None else {}
+
+    # Combine list of subdatasets
+    first.subdatasets = {**first_subdatasets, **second_subdatasets}
 
     # Return the first dataset with the second copied into it
     return first
