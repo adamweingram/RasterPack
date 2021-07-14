@@ -8,26 +8,37 @@ from copy import deepcopy
 from datetime import datetime
 
 # Internal Imports
+from raster_pack.exceptions import GeospatialDataException
 from raster_pack.dataset.dataset import Dataset
 
 # Setup Logger
 logger = logging.getLogger("raster_pack.io.safe")
 
 
-def get_datasets(path: str) -> List[Dataset]:
+def get_datasets(path: str, flat: Optional[bool] = False) -> List[Dataset]:
     """Create a list of datasets from a given SAFE file
 
     :param path: The path the SAFE file is located at
+    :param flat: Whether or not the output list should be flat or nested
     :return: A list of Dataset objects containing the data from the SAFE file
     """
 
     # Get Subdatasets as properly formatted path strings
     subdataset_paths = []
+    parent_dataset_path = None
     with rio.open(path) as dataset:
+        # Get the path for the parent dataset
+        parent_dataset_path = dataset.name
+
+        # Get the GDAL-formatted paths for all the subdatasets
         if dataset.subdatasets is not None and len(dataset.subdatasets) > 0:
             subdataset_paths = dataset.subdatasets
         else:
             raise RuntimeError("No subdatasets found in the given SAFE file!")
+
+    # Create Dataset object of the parent dataset
+    # Note: We ignore missing CRS, etc. data for parent datasets. This is common with SAFE files
+    parent_dataset = create_dataset(path=parent_dataset_path)
 
     # Create Dataset objects from subdatasets
     datasets = []
@@ -35,8 +46,14 @@ def get_datasets(path: str) -> List[Dataset]:
         new_dataset = create_dataset(subdataset_path)
         datasets.append(new_dataset)
 
-    # Return loaded datasets
-    return datasets
+    if flat:
+        # Return loaded datasets
+        return datasets
+    else:
+        # Return parent dataset with nested subdatasets
+        assert parent_dataset is not None
+        parent_dataset.subdatasets = datasets
+        return [parent_dataset]
 
 
 def create_dataset(path: str, datatype: Optional[object] = None) -> Dataset:
@@ -53,7 +70,7 @@ def create_dataset(path: str, datatype: Optional[object] = None) -> Dataset:
         # Display warning for user if a CRS is not detected in the source raster
         if dataset.crs is None:
             logger.warning("No CRS detected for input raster file! This may be an issue with the file or GDAL!")
-            raise RuntimeError("[ERROR] No CRS found! This may be due to an issue with GDAL!")
+            # raise GeospatialDataException("[ERROR] No CRS found! This may be due to an issue with GDAL!")
 
         # Create Dictionary to Store Data
         output_dict = {}
