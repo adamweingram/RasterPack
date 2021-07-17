@@ -10,21 +10,24 @@ from copy import deepcopy
 class Dataset:
     profile: rio.profiles.Profile
     bands: Dict[str, np.ndarray]
+    nodata: Optional[object]
     meta: Optional[dict]
     subdatasets: Optional[List[Dataset]]
 
-    def __init__(self, profile: rio.profiles.Profile, bands: Dict[str, np.ndarray], meta: Optional[dict] = None,
-                 subdatasets: Optional[List[Dataset]] = None):
+    def __init__(self, profile: rio.profiles.Profile, bands: Dict[str, np.ndarray], nodata: Optional[object] = None,
+                 meta: Optional[dict] = None, subdatasets: Optional[List[Dataset]] = None):
         """Instantiate a Dataset object
 
         :param profile: Profile of the dataset
         :param bands: A dictionary containing the band data associated with keys
+        :param nodata: The type/value used to denote no or invalid data
         :param meta: (Optional) A dictionary containing metadata about the dataset
         :param subdatasets: (Optional) A list containing additional subdataset Dataset objects
         """
 
         self.profile = profile
         self.bands = bands
+        self.nodata = nodata
         self.meta = meta
         self.subdatasets = subdatasets
 
