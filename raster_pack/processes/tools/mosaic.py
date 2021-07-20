@@ -32,6 +32,7 @@ def merge(first: Dataset, second: Dataset) -> Dataset:
     # [TODO] Each band could easily be merged in parallel
     new_bands = {}
     output_transform = None
+    last_band_key = None
     for band_key in first.bands.keys():
         start_time = time.time()
         merged = direct_merge(
@@ -43,10 +44,14 @@ def merge(first: Dataset, second: Dataset) -> Dataset:
 
         new_bands[band_key] = merged[0]
         output_transform = merged[1]
+        last_band_key = band_key
         logger.debug("Completed Band: {} in {} seconds".format(band_key, time.time() - start_time))
 
+    # Create the profile for the output file by modifying the profile from the last band processed
     new_profile = first.profile
     new_profile.data["transform"] = output_transform
+    new_profile.data["width"] = len(new_bands[last_band_key][0])
+    new_profile.data["height"] = len(new_bands[last_band_key])
 
     # [TODO] Implement proper metadata "diffing" for merge outputs
     return Dataset(profile=new_profile, bands=new_bands, nodata=first.nodata, meta=None, subdatasets=None)
