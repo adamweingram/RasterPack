@@ -12,13 +12,6 @@ from raster_pack.dataset.dataset import Dataset
 logger = logging.getLogger("raster_pack.tools.mosaic")
 
 
-def mosaic(datasets: List[Dataset]) -> Dataset:
-    # Use a reduce with merge or something
-    # May need to optimize for memory usage and
-    # [TODO] Implement list-based mosaic (merge everything in a list)
-    pass
-
-
 def merge(first: Dataset, second: Dataset) -> Dataset:
     # Verify correct conditions
     # [TODO] Create elegant failure conditions for incorrect inputs instead of AssertionErrors
