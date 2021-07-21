@@ -48,6 +48,7 @@ def get_datasets(path: str, flat: Optional[bool] = False) -> List[Dataset]:
 
     if flat:
         # Return loaded datasets
+        datasets.append(parent_dataset)
         return datasets
     else:
         # Return parent dataset with nested subdatasets
@@ -103,6 +104,9 @@ def create_dataset(path: str, datatype: Optional[object] = None) -> Dataset:
             "product_discriminator": str(name_butchered.group('product_discriminator'))
         }
         profile = deepcopy(dataset.profile)
+
+        # Copy other relevant information to the profile
+        profile.data["pixel_dimensions"] = dataset.res
 
         # Create and return new dataset
         return Dataset(profile=profile, bands=output_dict, meta=meta)
