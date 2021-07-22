@@ -47,8 +47,10 @@ def get_datasets(path: str, flat: Optional[bool] = False) -> List[Dataset]:
         datasets.append(new_dataset)
 
     if flat:
+        # Note: Not a good idea to include the "empty" parent dataset
+        # datasets.append(parent_dataset)
+
         # Return loaded datasets
-        datasets.append(parent_dataset)
         return datasets
     else:
         # Return parent dataset with nested subdatasets
