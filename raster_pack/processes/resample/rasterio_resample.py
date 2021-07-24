@@ -58,6 +58,7 @@ def rasterio_resample(dataset: Dataset, target_resolution: float, new_nodata: Op
         width=new_width,
         nodata=new_nodata
     )
+    dataset.profile.data["pixel_dimensions"] = (float(target_resolution), float(target_resolution))
     dataset.meta["resolution"] = new_resolution
 
     # Change datatype of all bands
