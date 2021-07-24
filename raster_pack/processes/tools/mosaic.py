@@ -27,6 +27,7 @@ def merge(first: Dataset, second: Dataset) -> Dataset:
     output_transform = None
     last_band_key = None
     for band_key in first.bands.keys():
+        logger.debug("Started merging for band: {}".format(band_key))
         start_time = time.time()
         merged = direct_merge(
             first_data=first.bands[band_key],
@@ -38,7 +39,7 @@ def merge(first: Dataset, second: Dataset) -> Dataset:
         new_bands[band_key] = merged[0]
         output_transform = merged[1]
         last_band_key = band_key
-        logger.debug("Completed Band: {} in {} seconds".format(band_key, time.time() - start_time))
+        logger.debug("Completed merging for band: {} in {} seconds".format(band_key, time.time() - start_time))
 
     # Create the profile for the output file by modifying the profile from the last band processed
     new_profile = first.profile
@@ -117,9 +118,11 @@ def array_writer_helper(input_array: np.ndarray, input_transform: rio.transform,
 
     # Overwrite substrate raster values with values from the input raster
     # [TODO] Overwrite method should be user-selectable (different methods for mosaic/merge, etc.)
+    start_write_time = time.time()
     for row_num in range(0, len(input_array)):
         for col_num in range(0, len(input_array)):
             substrate_array[row_num + offset["row"]][col_num + offset["col"]] = input_array[row_num][col_num]
+    logger.debug("Overwrote offset array to substrate array in {} seconds".format(time.time() - start_write_time))
 
     # Return the substrate dataset
     return substrate_array
