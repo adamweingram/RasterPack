@@ -1,9 +1,9 @@
 # External Imports
 import time
-from typing import List
 import logging
 import numpy as np
 import rasterio as rio
+from numba import njit
 
 # Internal Imports
 from raster_pack.dataset.dataset import Dataset
@@ -46,6 +46,7 @@ def merge(first: Dataset, second: Dataset) -> Dataset:
     new_profile.data["transform"] = output_transform
     new_profile.data["width"] = len(new_bands[last_band_key][0])
     new_profile.data["height"] = len(new_bands[last_band_key])
+    new_profile.data["count"] = len(new_bands.keys())
 
     # [TODO] Implement proper metadata "diffing" for merge outputs
     return Dataset(profile=new_profile, bands=new_bands, nodata=first.nodata, meta=None, subdatasets=None)
@@ -93,18 +94,19 @@ def direct_merge(first_data: np.ndarray, first_transform: rio.transform,
     new_array = np.ndarray(shape=(new_raster_dim["rows"], new_raster_dim["cols"]), dtype=first_data.dtype)
 
     # Write both datasets to the "substrate" array
-    new_array = array_writer_helper(input_array=first_data, input_transform=first_transform,
-                                    substrate_array=new_array, substrate_transform=new_transform)
+    # [TODO] Overwrite method should be user-selectable (different methods for mosaic/merge, etc.)
+    new_array = calc_offset_overwrite(input_array=first_data, input_transform=first_transform,
+                                      substrate_array=new_array, substrate_transform=new_transform)
 
-    new_array = array_writer_helper(input_array=second_data, input_transform=second_transform,
-                                    substrate_array=new_array, substrate_transform=new_transform)
+    new_array = calc_offset_overwrite(input_array=second_data, input_transform=second_transform,
+                                      substrate_array=new_array, substrate_transform=new_transform)
 
     # Return the new data array as well as the calculated transform
     return new_array, new_transform
 
 
-def array_writer_helper(input_array: np.ndarray, input_transform: rio.transform,
-                        substrate_array: np.ndarray, substrate_transform: rio.transform) -> np.ndarray:
+def calc_offset_overwrite(input_array: np.ndarray, input_transform: rio.transform,
+                          substrate_array: np.ndarray, substrate_transform: rio.transform) -> np.ndarray:
     # Calculate offset using top-left corner of the input array
     input_as_coordinate = dict(zip(
         ["xs", "ys"],
@@ -116,13 +118,27 @@ def array_writer_helper(input_array: np.ndarray, input_transform: rio.transform,
         rio.transform.rowcol(transform=substrate_transform, xs=input_as_coordinate["xs"], ys=input_as_coordinate["ys"])
     ))
 
-    # Overwrite substrate raster values with values from the input raster
-    # [TODO] Overwrite method should be user-selectable (different methods for mosaic/merge, etc.)
+    # Array operations performed in separate function for performance
+    logger.debug("Starting overwrite of substrate array...")
     start_write_time = time.time()
+    return_array = overwrite_with_offset(
+        input_array=input_array,
+        row_offset=offset["row"],
+        col_offset=offset["col"],
+        substrate_array=substrate_array
+    )
+    logger.debug("Overwrote offset array to substrate array in {} seconds".format(time.time() - start_write_time))
+    return return_array
+
+
+@njit
+def overwrite_with_offset(input_array: np.ndarray, row_offset: int, col_offset: int,
+                          substrate_array: np.ndarray) -> np.ndarray:
+    # Overwrite substrate raster values with values from the input raster
     for row_num in range(0, len(input_array)):
         for col_num in range(0, len(input_array)):
-            substrate_array[row_num + offset["row"]][col_num + offset["col"]] = input_array[row_num][col_num]
-    logger.debug("Overwrote offset array to substrate array in {} seconds".format(time.time() - start_write_time))
+            new_row = row_num + row_offset
+            new_col = col_num + col_offset
+            substrate_array[new_row][new_col] = input_array[row_num][col_num]
 
-    # Return the substrate dataset
     return substrate_array
