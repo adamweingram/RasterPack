@@ -55,12 +55,12 @@ def merge(first: Dataset, second: Dataset) -> Dataset:
 def direct_merge(first_data: np.ndarray, first_transform: rio.transform,
                  second_data: np.ndarray, second_transform: rio.transform) -> (np.ndarray, rio.transform):
     # Calculate pixel alignment offset for the inputs
-    first_bounds = rio.transform.array_bounds(height=len(first_data[0]),
-                                              width=len(first_data),
+    first_bounds = rio.transform.array_bounds(height=len(first_data),
+                                              width=len(first_data[0]),
                                               transform=first_transform)
 
-    second_bounds = rio.transform.array_bounds(height=len(second_data[0]),
-                                               width=len(second_data),
+    second_bounds = rio.transform.array_bounds(height=len(second_data),
+                                               width=len(second_data[0]),
                                                transform=second_transform)
 
     # In format (West, South, East, North)
@@ -118,6 +118,10 @@ def calc_offset_overwrite(input_array: np.ndarray, input_transform: rio.transfor
         rio.transform.rowcol(transform=substrate_transform, xs=input_as_coordinate["xs"], ys=input_as_coordinate["ys"])
     ))
 
+    # Verify offsets won't result in segmentation faults
+    assert offset["row"] + len(input_array) - 1 < len(substrate_array)
+    assert offset["col"] + len(input_array[0]) - 1 < len(substrate_array[0])
+
     # Array operations performed in separate function for performance
     logger.debug("Starting overwrite of substrate array...")
     start_write_time = time.time()
@@ -136,7 +140,7 @@ def overwrite_with_offset(input_array: np.ndarray, row_offset: int, col_offset: 
                           substrate_array: np.ndarray) -> np.ndarray:
     # Overwrite substrate raster values with values from the input raster
     for row_num in range(0, len(input_array)):
-        for col_num in range(0, len(input_array)):
+        for col_num in range(0, len(input_array[0])):
             new_row = row_num + row_offset
             new_col = col_num + col_offset
             substrate_array[new_row][new_col] = input_array[row_num][col_num]
