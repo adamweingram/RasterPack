@@ -1,4 +1,5 @@
 # External Imports
+from typing import Tuple
 import time
 import logging
 import numpy as np
@@ -29,12 +30,9 @@ def merge(first: Dataset, second: Dataset) -> Dataset:
     for band_key in first.bands.keys():
         logger.debug("Started merging for band: {}".format(band_key))
         start_time = time.time()
-        merged = direct_merge(
-            first_data=first.bands[band_key],
-            first_transform=first.profile.data["transform"],
-            second_data=second.bands[band_key],
-            second_transform=second.profile.data["transform"]
-        )
+        merged = direct_merge(first_data=first.bands[band_key], first_transform=first.profile.data["transform"],
+                              second_data=second.bands[band_key], second_transform=second.profile.data["transform"],
+                              pixel_resolution=first.profile.data["pixel_dimensions"])
 
         new_bands[band_key] = merged[0]
         output_transform = merged[1]
@@ -53,7 +51,8 @@ def merge(first: Dataset, second: Dataset) -> Dataset:
 
 
 def direct_merge(first_data: np.ndarray, first_transform: rio.transform,
-                 second_data: np.ndarray, second_transform: rio.transform) -> (np.ndarray, rio.transform):
+                 second_data: np.ndarray, second_transform: rio.transform,
+                 pixel_resolution: Tuple[int, int] = (10, 10)) -> (np.ndarray, rio.transform):
     # Calculate pixel alignment offset for the inputs
     first_bounds = rio.transform.array_bounds(height=len(first_data),
                                               width=len(first_data[0]),
@@ -77,8 +76,8 @@ def direct_merge(first_data: np.ndarray, first_transform: rio.transform,
 
     # [TODO] Derive width and height (in number of pixels) for the new raster
     # Note: Maybe use "res" value from original dataset info?
-    new_pixel_width = 10  # [HACK] TEMPORARY!!!
-    new_pixel_height = 10  # [HACK] TEMPORARY!!!
+    new_pixel_width = pixel_resolution[0]
+    new_pixel_height = pixel_resolution[1]
 
     # Create transform from origin point and pixel size
     new_transform = rio.transform.from_origin(west=new_bounds["west"], north=new_bounds["north"], xsize=new_pixel_width,
