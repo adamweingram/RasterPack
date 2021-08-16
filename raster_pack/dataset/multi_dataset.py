@@ -52,7 +52,8 @@ class MultiDataset:
         assert datasets is not None
         assert type(datasets) is list
 
-        # Add each Dataset in the list of Dataset objects
+        # Build list of items to easily and efficiently insert into the backing database
+        insertion_list = []
         for dataset in datasets:
             # Create a UUID to refer to this specific dataset in the dict and database
             # Note: This is really not an efficient or well-designed way to do things
@@ -62,18 +63,23 @@ class MultiDataset:
             # Note: We add even the subdatasets to the dictionary so they can be referenced easily using an identifier
             self.datasets[hash_identifier] = dataset
 
-            # Add entry for the dataset to the database table
-            self._db_cur.execute(
-                '''INSERT INTO datasets VALUES (?, ?, ?);''',
+            # Add entry to list of items to add to the database
+            insertion_list.append(
                 (hash_identifier, dataset.meta["date"], "" if subdataset_of is None else subdataset_of)
             )
-
-            # Commit database insertions
-            self._db_con.commit()
 
             # Insert all subdatasets with a recursive call
             if dataset.subdatasets is not None and len(dataset.subdatasets) > 0:
                 self.insert_many(datasets=dataset.subdatasets, subdataset_of=hash_identifier)
+
+        # Actually add to database
+        self._db_cur.executemany(
+            '''INSERT INTO datasets values (?, ?, ?);''',
+            insertion_list
+        )
+
+        # Commit database insertions
+        self._db_con.commit()
 
     def insert(self, dataset: Dataset) -> None:
         """Insert a Dataset
