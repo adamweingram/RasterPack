@@ -3,6 +3,7 @@ import gc
 import logging
 import math
 from collections import ChainMap
+from typing import Union
 
 import rasterio as rio
 from rasterio.features import geometry_mask
@@ -59,6 +60,73 @@ def crop_by_pixel(dataset: Dataset, row_start: int, row_end: int, col_start: int
     return dataset
 
 
+def crop_by_extent(dataset: Dataset, shapefile: Union[str, fiona.Collection]) -> Dataset:
+    # Open the shapefile (or just use provided shapefile Collection object)
+    if type(shapefile) is str:
+        with fiona.open(shapefile, "r") as shapefile:
+            # Verify spatial compatibility
+            assert dataset.profile.data['crs'].data['init'] == shapefile.crs['init']
+
+            # Cache shapes
+            shapes = [feature["geometry"] for feature in shapefile]
+    else:
+        # Cache shapes
+        shapes = [feature["geometry"] for feature in shapefile]
+
+    # Calculate the bounds for all the shapes
+    shapes_bounds = [{
+        "min_x": fiona.bounds(shape)[0],
+        "min_y": fiona.bounds(shape)[1],
+        "max_x": fiona.bounds(shape)[2],
+        "max_y": fiona.bounds(shape)[3]
+    } for shape in shapes]
+
+    # Calculate Bounding Box
+    dataset_bounding_box = array_bounds(
+        height=dataset.profile.data["height"],
+        width=dataset.profile.data["width"],
+        transform=dataset.profile.data["transform"]
+    )
+
+    bounding_box = {
+        "min_x": max(min([shape["min_x"] for shape in shapes_bounds]), dataset_bounding_box[0]),
+        "min_y": max(min([shape["min_y"] for shape in shapes_bounds]), dataset_bounding_box[1]),
+        "max_x": min(max([shape["max_x"] for shape in shapes_bounds]), dataset_bounding_box[2]),
+        "max_y": min(max([shape["max_y"] for shape in shapes_bounds]), dataset_bounding_box[3]),
+    }
+    assert bounding_box["min_x"] < bounding_box["max_x"]
+    assert bounding_box["min_y"] < bounding_box["max_y"]
+
+    # Calculate pixel offsets
+    calc_bounds = rio.transform.rowcol(
+        transform=dataset.profile.data["transform"],
+        xs=[bounding_box["min_x"], bounding_box["max_x"]],
+        ys=[bounding_box["min_y"], bounding_box["max_y"]],
+        op=math.floor,
+        precision=None
+    )
+
+    array_offsets = {
+        "min_row": calc_bounds[0][1],
+        "min_col": calc_bounds[1][0],
+        "max_row": calc_bounds[0][0],
+        "max_col": calc_bounds[1][1]
+    }
+    del calc_bounds
+
+    # Modify dataset using pixel cropping
+    dataset = crop_by_pixel(
+        dataset=dataset,
+        row_start=array_offsets["min_row"],
+        row_end=array_offsets["max_row"],
+        col_start=array_offsets["min_col"],
+        col_end=array_offsets["max_col"]
+    )
+
+    # Return the dataset
+    return dataset
+
+
 def clip_number(n, min_num, max_num):
     return max(min(n, max_num), min_num)
 
@@ -89,57 +157,9 @@ def clip(dataset: Dataset, shapefile_path: str, crop: bool = False) -> Dataset:
         # Cache shapes
         shapes = [feature["geometry"] for feature in shapefile]
 
-    # If enabled, crop output raster to extent of the shapefile
-    if clip_preferences["crop"]:
-        # Calculate the bounds for all the shapes
-        shapes_bounds = [{
-            "min_x": fiona.bounds(shape)[0],
-            "min_y": fiona.bounds(shape)[1],
-            "max_x": fiona.bounds(shape)[2],
-            "max_y": fiona.bounds(shape)[3]
-        } for shape in shapes]
-
-        # Calculate Bounding Box
-        dataset_bounding_box = array_bounds(
-            height=dataset.profile.data["height"],
-            width=dataset.profile.data["width"],
-            transform=dataset.profile.data["transform"]
-        )
-
-        bounding_box = {
-            "min_x": max(min([shape["min_x"] for shape in shapes_bounds]), dataset_bounding_box[0]),
-            "min_y": max(min([shape["min_y"] for shape in shapes_bounds]), dataset_bounding_box[1]),
-            "max_x": min(max([shape["max_x"] for shape in shapes_bounds]), dataset_bounding_box[2]),
-            "max_y": min(max([shape["max_y"] for shape in shapes_bounds]), dataset_bounding_box[3]),
-        }
-        assert bounding_box["min_x"] < bounding_box["max_x"]
-        assert bounding_box["min_y"] < bounding_box["max_y"]
-
-        # Calculate pixel offsets
-        calc_bounds = rio.transform.rowcol(
-            transform=dataset.profile.data["transform"],
-            xs=[bounding_box["min_x"], bounding_box["max_x"]],
-            ys=[bounding_box["min_y"], bounding_box["max_y"]],
-            op=math.floor,
-            precision=None
-        )
-
-        array_offsets = {
-            "min_row": calc_bounds[0][1],
-            "min_col": calc_bounds[1][0],
-            "max_row": calc_bounds[0][0],
-            "max_col": calc_bounds[1][1]
-        }
-        del calc_bounds
-
-        # Modify dataset using pixel cropping
-        dataset = crop_by_pixel(
-            dataset=dataset,
-            row_start=array_offsets["min_row"],
-            row_end=array_offsets["max_row"],
-            col_start=array_offsets["min_col"],
-            col_end=array_offsets["max_col"]
-        )
+        # If enabled, crop output raster to extent of the shapefile
+        if clip_preferences["crop"]:
+            dataset = crop_by_extent(dataset, shapefile)
 
     # Build a raster mask using the shapes and transform/dimension information from the raster Dataset object
     mask = geometry_mask(
