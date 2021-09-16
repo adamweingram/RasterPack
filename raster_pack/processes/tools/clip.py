@@ -18,6 +18,19 @@ logger = logging.getLogger("raster_pack.tools.clip")
 
 
 def crop_by_pixel(dataset: Dataset, row_start: int, row_end: int, col_start: int, col_end: int) -> Dataset:
+    """Crop Dataset object by pixel rows and columns
+
+    Just as with normal array slicing, this function is **start inclusive** and **end exclusive**. Note that
+    the Dataset object is operated on directly (the function does not copy and modify).
+
+    :param dataset: The Dataset object to operate on
+    :param row_start: The start row (inclusive)
+    :param row_end: The end row (exclusive)
+    :param col_start: The start column (inclusive)
+    :param col_end: The end column (exclusive)
+    :return: A reference to the modified Dataset object
+    """
+
     # Verify input conditions
     assert dataset.profile is not None
     assert dataset.profile.data is not None
@@ -61,6 +74,12 @@ def crop_by_pixel(dataset: Dataset, row_start: int, row_end: int, col_start: int
 
 
 def crop_by_extent(dataset: Dataset, shapefile: Union[str, fiona.Collection]) -> Dataset:
+    """Crop Dataset object using a shapefile's **extent**
+
+    :param dataset: The Dataset object to operate on
+    :param shapefile: A fiona Collection object containing the shapefile parts
+    :return: A reference to the modified Dataset object
+    """
     # Open the shapefile (or just use provided shapefile Collection object)
     if type(shapefile) is str:
         with fiona.open(shapefile, "r") as shapefile:
@@ -128,10 +147,24 @@ def crop_by_extent(dataset: Dataset, shapefile: Union[str, fiona.Collection]) ->
 
 
 def clip_number(n, min_num, max_num):
+    """Helper function to "clip" a number to certain bounds
+
+    :param n: The variable
+    :param min_num: The minimum value the variable should contain
+    :param max_num: The maximum value the variable should contain
+    :return: The clipped value
+    """
     return max(min(n, max_num), min_num)
 
 
 def clip(dataset: Dataset, shapefile_path: str, crop: bool = False) -> Dataset:
+    """Clip a Dataset object to a shapefile
+
+    :param dataset: The Dataset object to operate on
+    :param shapefile_path: The path to the shapefile to use for clipping
+    :param crop: Whether or not to crop the raster to the shapefile's extent after clipping (defaults to False)
+    :return: A reference to the modified Dataset object
+    """
     logger.debug("Got shapefile path: {}".format(shapefile_path))
 
     # Create ChainMap for preferences
