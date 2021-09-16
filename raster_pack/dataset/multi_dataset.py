@@ -17,6 +17,10 @@ class MultiDataset:
     _db_cur: sqlite3.Cursor
 
     def __init__(self, datasets: Optional[List[Dataset]] = None):
+        """A sqlite-backed queryable multi-Dataset object container
+
+        :param datasets: (Optional) A list of datasets to be inserted into the MultiDataset object
+        """
         # Create dict for references to Dataset objects
         self.datasets = {}
 
