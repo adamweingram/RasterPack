@@ -7,7 +7,7 @@ logger = logging.getLogger("raster_pack.process.environmental_indexes.sentinel2_
 
 
 def calc_AWEInsh(band3: np.ndarray, band8: np.ndarray, band11: np.ndarray, band12: np.ndarray):
-    """[TODO] Write description for AWEInsh index
+    """Calculates AWEInsh given Sentinel-2 bands 3, 8, 11, and 12
 
     :param band3: Sentinel-2 Band 3
     :param band8: Sentinel-2 Band 8
@@ -27,7 +27,7 @@ def calc_AWEInsh(band3: np.ndarray, band8: np.ndarray, band11: np.ndarray, band1
 
 
 def calc_AWEIsh(band2: np.ndarray, band3: np.ndarray, band8: np.ndarray, band11: np.ndarray, band12: np.ndarray):
-    """[TODO] Write description for AWEIsh index
+    """Calculates AWEIsh given Sentinel-2 bands 2, 3, 8, 11, and 12
 
     :param band2: Sentinel-2 Band 2
     :param band3: Sentinel-2 Band 3
