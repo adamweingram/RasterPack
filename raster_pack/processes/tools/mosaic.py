@@ -14,6 +14,18 @@ logger = logging.getLogger("raster_pack.tools.mosaic")
 
 
 def merge(first: Dataset, second: Dataset) -> Dataset:
+    """Merge two Dataset objects together (merge the rasters)
+
+    The function will attempt to merge two Dataset objects and their corresponding rasters. The
+    function will also attempt to merge metadata, though this is better done manually as some
+    data will inevitably only apply to one Dataset or the other. **Spatial information like
+    transform is preserved.**
+
+    :param first: The first Dataset object
+    :param second: The second Dataset object
+    :return: A new Dataset object that is the result of merging the two input Dataset objects
+    """
+
     # Verify correct conditions
     # [TODO] Create elegant failure conditions for incorrect inputs instead of AssertionErrors
     assert "crs" in first.profile.data.keys() and "crs" in second.profile.data.keys()
@@ -53,6 +65,16 @@ def merge(first: Dataset, second: Dataset) -> Dataset:
 def direct_merge(first_data: np.ndarray, first_transform: rio.transform,
                  second_data: np.ndarray, second_transform: rio.transform,
                  pixel_resolution: Tuple[int, int] = (10, 10)) -> (np.ndarray, rio.transform):
+    """Directly merge two numpy ndarrays with associated spatial transforms
+
+    :param first_data: Raw ndarray from the first dataset
+    :param first_transform: Spatial transform from the first dataset
+    :param second_data: Raw ndarray from the second dataset
+    :param second_transform: Spatial transform from the second dataset
+    :param pixel_resolution: The pixel resolution for both datasets given as a tuple
+    :return: A tuple containing a raw combined ndarray and a combined spatial transform respectively
+    """
+
     # Calculate pixel alignment offset for the inputs
     first_bounds = rio.transform.array_bounds(height=len(first_data),
                                               width=len(first_data[0]),
@@ -106,6 +128,18 @@ def direct_merge(first_data: np.ndarray, first_transform: rio.transform,
 
 def calc_offset_overwrite(input_array: np.ndarray, input_transform: rio.transform,
                           substrate_array: np.ndarray, substrate_transform: rio.transform) -> np.ndarray:
+    """A helper function to spatially overwrite a "substrate" array with an input array
+
+    The function will automatically calculate the overlap using the array dimensions and each dataset's spatial
+    transform. The **substrate array will be overwritten where overlap exists**.
+
+    :param input_array: Raw ndarray to overwrite from
+    :param input_transform: Spatial transform of the input dataset
+    :param substrate_array: Raw ndarray to use as the "substrate" that will be written to
+    :param substrate_transform: Spatial transform of the substrate dataset
+    :return: A reference the the substrate array that has been partially overwritten
+    """
+
     # Calculate offset using top-left corner of the input array
     input_as_coordinate = dict(zip(
         ["xs", "ys"],
@@ -137,6 +171,15 @@ def calc_offset_overwrite(input_array: np.ndarray, input_transform: rio.transfor
 @njit
 def overwrite_with_offset(input_array: np.ndarray, row_offset: int, col_offset: int,
                           substrate_array: np.ndarray) -> np.ndarray:
+    """An efficiency-focused helper function to actually do overlap overwrite heavy-lifting
+
+    :param input_array: Raw ndarray to get data from
+    :param row_offset: The offset relative to the substrate array's start row
+    :param col_offset: The offset relative to the substrate array's start column
+    :param substrate_array: Raw ndarray to overwrite
+    :return: A reference to the partially overwritten substrate array
+    """
+
     # Overwrite substrate raster values with values from the input raster
     for row_num in range(0, len(input_array)):
         for col_num in range(0, len(input_array[0])):
