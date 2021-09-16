@@ -13,17 +13,24 @@
 
 ## Key Features
 
-- Written in Python using [RasterIO](https://github.com/mapbox/rasterio) and [GDAL](https://gdal.org/) packages
+- Focus on in-memory operations
+- Written in Python using [Numpy](https://numpy.org/), [RasterIO](https://github.com/mapbox/rasterio) and [GDAL](https://gdal.org/) packages
 - Import/read-in many different types of satellite/raster imagery
 - Run pre-processing steps on imagery in a common way
     - Vegetation indices
     - Resampling
     - Rescaling
+    - Mosaicking (accelerated with [Numba](https://numba.pydata.org/))
 - Write out results to disk
-
-*With many more features planned*
+- Uses data structure that are compatible with other tools
 
 ## How to Use
+
+The software is designed to be used in scripts or other processing chains, and is 
+therefore distributed as a python package. The following sections contain instructions
+for installing the package in an existing python environment.
+
+### MacOS/Linux/Unix
 
 ```bash
 git clone https://github.com/adamweingram/RasterPack.git RasterPack
