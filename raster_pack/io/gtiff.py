@@ -11,12 +11,15 @@ from raster_pack.dataset.dataset import Dataset
 logger = logging.getLogger("raster_pack.io.gtiff")
 
 
-def output_gtiff(dataset: Dataset, output_path: str, datatype: Optional[str] = rio.float32) -> None:
+def output_gtiff(dataset: Dataset, output_path: str, datatype: Optional[str] = rio.float32,
+                 compression: Optional[str] = None, interleaving: Optional[str] = 'band') -> None:
     """Output Dataset to a GeoTIFF file
 
     :param dataset: The dataset to be used to generate the GeoTIFF
     :param output_path: The path that the file will be written to
     :param datatype: (Optional) A rasterio datatype object representing the datatype to use when writing the file
+    :param compression: (Optional) The compression algorithm to use. By default, no compression is used.
+    :param interleaving: (Optional) Which interleaving method to use. Defaults to band-sequential.
     """
 
     # New instance of GDAL/Rasterio
@@ -28,15 +31,24 @@ def output_gtiff(dataset: Dataset, output_path: str, datatype: Optional[str] = r
         # Update profile
         dataset.profile.update(
             driver="GTiff",
+            interleave=interleaving,
+            tiled=True,
+            # compress='lzw',
+            blockxsize=128,
+            blockysize=128,
+            # nodata=np.float32(0.0),
             dtype=datatype,
             count=len(dataset.bands)
         )
+        if compression is not None:
+            dataset.profile["compress"] = compression
 
         # Read each layer and write it to stack
         logger.debug("Started writing to file...")
         with rio.open(output_path, 'w', **dataset.profile) as dst:
             for ident, raw_data in enumerate(dataset.bands.values(), start=1):
                 dst.write_band(ident, raw_data.astype(datatype))
+
     logger.debug("Done writing to file.")
 
 
