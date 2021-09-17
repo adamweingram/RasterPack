@@ -57,6 +57,7 @@ def memfile_gtiff(dataset: Dataset, datatype: Optional[str] = rio.float32) -> Me
 
     :param dataset: The dataset to be used to generate the GeoTIFF MemoryFile
     :param datatype: (Optional) A rasterio datatype object representing the datatype to use when writing the file
+    :return: A Rasterio MemoryFile
     """
 
     # New instance of GDAL/Rasterio
