@@ -1,3 +1,16 @@
+:root {
+    --paragraph-font: 'Georgia', 'Hoefler Text', sans-serif;
+    --mono-font: 'SF Mono', 'Consolas', 'Menlo', 'DejaVu Sans Mono', 'Bitstream Vera Sans Mono', monospace;
+}
+
+body {
+    font-family: var(--paragraph-font);
+}
+
+div.body h1, div.body h2, div.body h3, div.body h4, div.body h5, div.body h6 {
+    font-family: var(--paragraph-font);
+}
+
 section {
     margin: 1em 0 3em 0;
 }
@@ -8,4 +21,11 @@ section {
 
 dd > :first-child {
     margin-top: 1em;
+}
+
+.sig {
+    font-family: var(--mono-font);
+    background-color: #eeeeee;
+    padding: 0.5em 0.4em 0.5em 0.4em;
+    border-radius: 0.3em;
 }
