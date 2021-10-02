@@ -111,4 +111,4 @@ def create_dataset(path: str, datatype: Optional[object] = None) -> Dataset:
         profile.data["pixel_dimensions"] = dataset.res
 
         # Create and return new dataset
-        return Dataset(profile=profile, bands=output_dict, meta=meta)
+        return Dataset(profile=profile, bands=output_dict, meta=meta, nodata=dataset.nodata)
