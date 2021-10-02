@@ -1,5 +1,7 @@
 # External Imports
 import logging
+from copy import deepcopy
+
 import rasterio as rio
 from rasterio import MemoryFile
 from typing import Optional
@@ -9,6 +11,45 @@ from raster_pack.dataset.dataset import Dataset
 
 # Setup Logger
 logger = logging.getLogger("raster_pack.io.gtiff")
+
+
+def create_dataset(path: str, datatype: Optional[object] = None) -> Dataset:
+    """Create a dataset from a given GDAL-formatted SAFE subdataset path string
+
+    :param path: Path of the GeoTIFF file
+    :param datatype: Rasterio datatype to use
+    :return: Dataset created from the GDAL-compatible dataset at the specified path
+    """
+
+    # Open GeoTIFF file for processing
+    with rio.open(path) as dataset:
+
+        # Display warning for user if a CRS is not detected in the source raster
+        if dataset.crs is None:
+            logger.warning("No CRS detected for input raster file! This may be an issue with the file or GDAL!")
+            # raise GeospatialDataException("[ERROR] No CRS found! This may be due to an issue with GDAL!")
+
+        # Create Dictionary to Store Data
+        output_dict = {}
+
+        # Get data using Rasterio
+        for i, band_index in enumerate(dataset.indexes):
+
+            # If there is no user-defined datatype, use the original dataset datatype
+            datatype = dataset.dtypes[i] if datatype is None else datatype
+
+            # Read from the dataset into the output dictionary
+            output_dict["{}".format(i)] = dataset.read(band_index).astype(datatype)
+
+        # Assemble metadata list
+        profile = deepcopy(dataset.profile)
+        meta = {}
+
+        # Copy other relevant information to the profile
+        profile.data["pixel_dimensions"] = dataset.res
+
+        # Create and return new dataset
+        return Dataset(profile=profile, bands=output_dict, meta=meta, nodata=dataset.nodata)
 
 
 def output_gtiff(dataset: Dataset, output_path: str, datatype: Optional[str] = rio.float32,
