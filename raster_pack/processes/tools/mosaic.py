@@ -1,5 +1,5 @@
 # External Imports
-from typing import Tuple
+from typing import Tuple, Optional
 import time
 import logging
 import numpy as np
@@ -13,7 +13,7 @@ from raster_pack.dataset.dataset import Dataset
 logger = logging.getLogger("raster_pack.tools.mosaic")
 
 
-def merge(first: Dataset, second: Dataset) -> Dataset:
+def merge(first: Dataset, second: Dataset, reference: Optional[Dataset] = None) -> Dataset:
     """Merge two Dataset objects together (merge the rasters)
 
     The function will attempt to merge two Dataset objects and their corresponding rasters. The
@@ -21,8 +21,12 @@ def merge(first: Dataset, second: Dataset) -> Dataset:
     data will inevitably only apply to one Dataset or the other. **Spatial information like
     transform is preserved.**
 
+    CAUTION: Will automatically use numpy's nan as a "nodata" value if the first Dataset object's "nodata" field is
+    set to None! This may cause data loss if numpy.nan corresponds to a real value in your data!
+
     :param first: The first Dataset object
     :param second: The second Dataset object
+    :param reference: (Optional) A dataset to use as a "reference" or "model" (for the extent/dimensions/etc.)
     :return: A new Dataset object that is the result of merging the two input Dataset objects
     """
 
@@ -34,6 +38,10 @@ def merge(first: Dataset, second: Dataset) -> Dataset:
     assert len(first.bands) == len(second.bands)
     assert first.bands.keys() == second.bands.keys()
 
+    # Fix lacking "nodata" values
+    first.nodata = np.nan if first.nodata is None else first.nodata
+    second.nodata = np.nan if second.nodata is None else second.nodata
+
     # Merge each band
     # [TODO] Each band could easily be merged in parallel
     new_bands = {}
@@ -42,9 +50,40 @@ def merge(first: Dataset, second: Dataset) -> Dataset:
     for band_key in first.bands.keys():
         logger.debug("Started merging for band: {}".format(band_key))
         start_time = time.time()
+
+        # Modify non-matching nodata values
+        # Note: By default, the first dataset's "nodata" will be used here
+        if first.nodata != second.nodata:
+            second_band_data = second.bands[band_key]
+            np.where(second_band_data == second.nodata, first.nodata, second_band_data)
+
+        # Actually perform merge
         merged = direct_merge(first_data=first.bands[band_key], first_transform=first.profile.data["transform"],
                               second_data=second.bands[band_key], second_transform=second.profile.data["transform"],
-                              pixel_resolution=first.profile.data["pixel_dimensions"])
+                              pixel_resolution=first.profile.data["pixel_dimensions"],
+                              nodata_value=first.nodata)
+
+        # "Merge" with model if provided
+        if reference is not None:
+            # Get the reference transform
+            ref_profile = reference.profile.data
+
+            # Get the reference band numpy array
+            ref_key, ref_band_data = next(iter(reference.bands.items()))
+
+            # Create a new substrate array
+            nodata_array = np.ndarray(shape=ref_band_data.shape, dtype=ref_band_data.dtype)
+
+            # Fill the new substrate array with nodata values
+            nodata_array.fill(first.nodata)
+
+            # Merge with nodata substrate array
+            # [TODO] Find a way to reuse the already created "substrate" array rather than doubling memory usage
+            merged = direct_merge(first_data=nodata_array, first_transform=ref_profile["transform"],
+                                  second_data=merged[0], second_transform=merged[1],
+                                  pixel_resolution=(first.profile.data["pixel_dimensions"]),
+                                  nodata_value=first.nodata)
+            del nodata_array
 
         new_bands[band_key] = merged[0]
         output_transform = merged[1]
@@ -64,7 +103,8 @@ def merge(first: Dataset, second: Dataset) -> Dataset:
 
 def direct_merge(first_data: np.ndarray, first_transform: rio.transform,
                  second_data: np.ndarray, second_transform: rio.transform,
-                 pixel_resolution: Tuple[int, int] = (10, 10)) -> (np.ndarray, rio.transform):
+                 pixel_resolution: Tuple[int, int] = (10, 10),
+                 nodata_value: Optional[object] = np.nan) -> (np.ndarray, rio.transform):
     """Directly merge two numpy ndarrays with associated spatial transforms
 
     :param first_data: Raw ndarray from the first dataset
@@ -72,8 +112,12 @@ def direct_merge(first_data: np.ndarray, first_transform: rio.transform,
     :param second_data: Raw ndarray from the second dataset
     :param second_transform: Spatial transform from the second dataset
     :param pixel_resolution: The pixel resolution for both datasets given as a tuple
+    :param nodata_value: The value to use to fill the "substrate" array
     :return: A tuple containing a raw combined ndarray and a combined spatial transform respectively
     """
+
+    # Verify conditions
+    assert nodata_value is not None
 
     # Calculate pixel alignment offset for the inputs
     first_bounds = rio.transform.array_bounds(height=len(first_data),
@@ -96,7 +140,7 @@ def direct_merge(first_data: np.ndarray, first_transform: rio.transform,
         ]
     ))
 
-    # [TODO] Derive width and height (in number of pixels) for the new raster
+    # Derive pixel dimensions for the new raster
     # Note: Maybe use "res" value from original dataset info?
     new_pixel_width = pixel_resolution[0]
     new_pixel_height = pixel_resolution[1]
@@ -113,6 +157,9 @@ def direct_merge(first_data: np.ndarray, first_transform: rio.transform,
 
     # Create the new "substrate" array
     new_array = np.ndarray(shape=(new_raster_dim["rows"], new_raster_dim["cols"]), dtype=first_data.dtype)
+
+    # Fill the substrate array with "nodata" (depending on what's defined)
+    new_array.fill(nodata_value)
 
     # Write both datasets to the "substrate" array
     # [TODO] Overwrite method should be user-selectable (different methods for mosaic/merge, etc.)
