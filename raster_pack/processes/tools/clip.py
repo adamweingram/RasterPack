@@ -17,7 +17,7 @@ from raster_pack.dataset.dataset import Dataset
 logger = logging.getLogger("raster_pack.tools.clip")
 
 
-def crop_by_pixel(dataset: Dataset, row_start: int, row_end: int, col_start: int, col_end: int) -> Dataset:
+def crop_by_pixel(dataset: Dataset, row_start: int, row_end: int, col_start: int, col_end: int, copy: bool = False) -> Dataset:
     """Crop Dataset object by pixel rows and columns
 
     Just as with normal array slicing, this function is **start inclusive** and **end exclusive**. Note that
@@ -28,6 +28,7 @@ def crop_by_pixel(dataset: Dataset, row_start: int, row_end: int, col_start: int
     :param row_end: The end row (exclusive)
     :param col_start: The start column (inclusive)
     :param col_end: The end column (exclusive)
+    :param copy: (Optional) Whether or not to make a copy of the resulting sliced array so original array can be freed
     :return: A reference to the modified Dataset object
     """
 
@@ -43,6 +44,10 @@ def crop_by_pixel(dataset: Dataset, row_start: int, row_end: int, col_start: int
     for band_key, data_array in dataset.bands.items():
         # Use a range index to crop the array
         dataset.bands[band_key] = data_array[row_start:row_end, col_start:col_end]
+
+        # Make a copy if specified
+        if copy:
+            dataset.bands[band_key] = dataset.bands[band_key].copy()
 
     # Recalculate the transform
     new_origin_point = dict(zip(
@@ -73,11 +78,12 @@ def crop_by_pixel(dataset: Dataset, row_start: int, row_end: int, col_start: int
     return dataset
 
 
-def crop_by_extent(dataset: Dataset, shapefile: Union[str, fiona.Collection]) -> Dataset:
+def crop_by_extent(dataset: Dataset, shapefile: Union[str, fiona.Collection], copy: bool = False) -> Dataset:
     """Crop Dataset object using a shapefile's **extent**
 
     :param dataset: The Dataset object to operate on
     :param shapefile: A fiona Collection object containing the shapefile parts
+    :param copy: (Optional) Whether or not to make a copy of the resulting sliced array so original array can be freed
     :return: A reference to the modified Dataset object
     """
     # Open the shapefile (or just use provided shapefile Collection object)
@@ -139,7 +145,8 @@ def crop_by_extent(dataset: Dataset, shapefile: Union[str, fiona.Collection]) ->
         row_start=array_offsets["min_row"],
         row_end=array_offsets["max_row"],
         col_start=array_offsets["min_col"],
-        col_end=array_offsets["max_col"]
+        col_end=array_offsets["max_col"],
+        copy=copy
     )
 
     # Return the dataset
