@@ -32,7 +32,7 @@ class Dataset:
         self.subdatasets = subdatasets
 
 
-def combine(first: Dataset, second: Dataset, skip_duplicates: Optional[bool] = False) -> Dataset:
+def combine(first: Dataset, second: Dataset, skip_duplicates: Optional[bool] = False, copy: bool = True) -> Dataset:
     """Combine one dataset with another compatible dataset
 
     This function simply checks for basic compatibility (resolution, array size,
@@ -43,6 +43,7 @@ def combine(first: Dataset, second: Dataset, skip_duplicates: Optional[bool] = F
     :param first: The dataset that the second will be combined into
     :param second: The dataset that will be combined with the first
     :param skip_duplicates: (Optional) Whether or not to skip duplicate bands (Default False)
+    :param copy: (Optional) Whether or not to copy data or just use references (Default True = will copy)
     :return: This dataset with the new dataset added
     """
 
@@ -62,10 +63,9 @@ def combine(first: Dataset, second: Dataset, skip_duplicates: Optional[bool] = F
             first.profile["width"] != second.profile["width"]:
         raise RuntimeError("Tried to combine two datasets that are not compatible!")
 
-    # Create a deep copy of datasets (Caution, EXPENSIVE!)
-    # [TODO] Make clean combination of datasets less resource-intensive
-    first_bands = deepcopy(first.bands)
-    second_bands = deepcopy(second.bands)
+    # Create a deep copy of datasets (Caution, EXPENSIVE if copy is set!)
+    first_bands = deepcopy(first.bands) if copy else first.bands
+    second_bands = deepcopy(second.bands) if copy else second.bands
 
     # Test for bands with the same name to avoid overwriting data
     # If the user wants to skip duplicates, remove the duplicate entry from the second
@@ -80,9 +80,16 @@ def combine(first: Dataset, second: Dataset, skip_duplicates: Optional[bool] = F
     # Actually copy over
     first.bands = {**first_bands, **second_bands}
 
-    # Create a deep copy of all the subdatasets (Caution, potentially EXTREMELY EXPENSIVE!)
-    first_subdatasets = deepcopy(first.subdatasets) if first.subdatasets is not None else {}
-    second_subdatasets = deepcopy(second.subdatasets) if second.subdatasets is not None else {}
+    # Create a deep copy of all the subdatasets if specified (Caution, potentially EXTREMELY EXPENSIVE!)
+    if first.subdatasets is not None:
+        first_subdatasets = deepcopy(first.subdatasets) if copy is not None else first.subdatasets
+    else:
+        first_subdatasets = {}
+
+    if second.subdatasets is not None:
+        second_subdatasets = deepcopy(second.subdatasets) if copy is not None else second.subdatasets
+    else:
+        second_subdatasets = {}
 
     # Combine list of subdatasets
     first.subdatasets = {**first_subdatasets, **second_subdatasets}
