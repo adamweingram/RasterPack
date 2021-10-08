@@ -1,5 +1,4 @@
 # External Imports
-import gc
 import logging
 import math
 from collections import ChainMap
@@ -217,7 +216,6 @@ def clip(dataset: Dataset, shapefile_path: str, crop: bool = False) -> Dataset:
 
     # Delete mask array to reduce memory usage
     del mask
-    gc.collect()  # [FIXME] Make sure mask array garbage collection call is properly executed for performance
 
     # Return dataset
     return dataset
