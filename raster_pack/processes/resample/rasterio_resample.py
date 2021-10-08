@@ -13,7 +13,7 @@ from raster_pack.dataset.dataset import Dataset
 logger = logging.getLogger("raster_pack.processes.resample.rasterio_resample")
 
 
-def rasterio_resample(dataset: Dataset, target_resolution: float, new_nodata: Optional[np.dtype] = None,
+def rasterio_resample(dataset: Dataset, target_resolution: float, new_nodata: object = 'auto',
                       resampling_method: Optional[rio_warp.Resampling] = rio_warp.Resampling.nearest,
                       output_datatype: Optional[np.dtype] = np.float32) -> Dataset:
     """Resample a dataset to a target resolution
@@ -23,7 +23,7 @@ def rasterio_resample(dataset: Dataset, target_resolution: float, new_nodata: Op
 
     :param dataset: The dataset to resample
     :param target_resolution: The target resolution (in relative units: e.g. 10m -> 60m means you would enter 60)
-    :param new_nodata: (Optional) The nodata type of the output dataset
+    :param new_nodata: (Optional) The nodata value for the output dataset ('auto' to use the input Dataset nodata value)
     :param resampling_method: (Optional) The rasterio warp resampling method (Nearest Neighbor by default)
     :param output_datatype: (Optional) Datatype to use for raster manipulation and output (DEFAULTS TO float32)
     :return: The resampled dataset (SEE NOTE! THIS IS A POINTER TO THE MODIFIED ORIGINAL!)
@@ -39,18 +39,19 @@ def rasterio_resample(dataset: Dataset, target_resolution: float, new_nodata: Op
     # Copy data from source Dataset
     source_crs = deepcopy(dataset.profile["crs"])
     source_transform = deepcopy(dataset.profile["transform"])
-    source_nodata = dataset.profile["nodata"] if dataset.profile["nodata"] is not None else 0.0  # Must set nodata!
+    source_nodata = deepcopy(dataset.nodata)
 
-    # Calculate profile and transfer elements
+    # Calculate profile/transform and transfer elements
     new_transform = Affine(source_transform.a / scaling, source_transform.b, source_transform.c, source_transform.d,
                            source_transform.e / scaling, source_transform.f)
     new_height = int(dataset.profile["height"] * scaling)
     new_width = int(dataset.profile["width"] * scaling)
     new_resolution = (target_resolution, target_resolution)
-    new_nodata = source_nodata if new_nodata is None else new_nodata
+    new_nodata = source_nodata if new_nodata is "auto" else new_nodata
     new_crs = source_crs    # [TODO] Add ability to change CRS in rasterio resample function
 
     # Update profile to match output
+    dataset.nodata = new_nodata
     dataset.profile.update(
         res=(float(target_resolution), float(target_resolution)),
         transform=new_transform,
@@ -62,10 +63,11 @@ def rasterio_resample(dataset: Dataset, target_resolution: float, new_nodata: Op
     dataset.meta["resolution"] = new_resolution
 
     # Change datatype of all bands
+    # [TODO] There may be a way to save memory by freeing old type ndarrays
     for band_id, band_value in dataset.bands.items():
         dataset.bands[band_id] = band_value.astype(output_datatype)
 
-    # Run resampling
+    # Run resampling on each band
     for band_key, band_data in dataset.bands.items():
         # Create an array in the correct resampled dimensions
         resampled_array = np.ma.asanyarray(np.empty(shape=(new_width, new_height), dtype=output_datatype))
