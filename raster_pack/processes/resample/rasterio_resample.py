@@ -47,7 +47,7 @@ def rasterio_resample(dataset: Dataset, target_resolution: float, new_nodata: ob
     new_height = int(dataset.profile["height"] * scaling)
     new_width = int(dataset.profile["width"] * scaling)
     new_resolution = (target_resolution, target_resolution)
-    new_nodata = source_nodata if new_nodata is "auto" else new_nodata
+    new_nodata = source_nodata if new_nodata == "auto" else new_nodata
     new_crs = source_crs    # [TODO] Add ability to change CRS in rasterio resample function
 
     # Update profile to match output
