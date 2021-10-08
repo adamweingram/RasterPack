@@ -13,7 +13,8 @@ from raster_pack.dataset.dataset import Dataset
 logger = logging.getLogger("raster_pack.tools.mosaic")
 
 
-def merge(first: Dataset, second: Dataset, reference: Optional[Dataset] = None) -> Dataset:
+def merge(first: Dataset, second: Dataset, reference: Optional[Dataset] = None,
+          nodata_value: Optional[object] = None) -> Dataset:
     """Merge two Dataset objects together (merge the rasters)
 
     The function will attempt to merge two Dataset objects and their corresponding rasters. The
@@ -38,9 +39,15 @@ def merge(first: Dataset, second: Dataset, reference: Optional[Dataset] = None) 
     assert len(first.bands) == len(second.bands)
     assert first.bands.keys() == second.bands.keys()
 
-    # Fix lacking "nodata" values
-    first.nodata = np.nan if first.nodata is None else first.nodata
-    second.nodata = np.nan if second.nodata is None else second.nodata
+    # Define a nodata value for this entire merge operation if it hasn't been provided
+    nodata_value = second.nodata if nodata_value is None else nodata_value
+
+    # Fix lacking or unmatched "nodata" values
+    if first.nodata != nodata_value:
+        first.switch_nodata(new_nodata_value=nodata_value, recursive=True)
+
+    if second.nodata != nodata_value:
+        second.switch_nodata(new_nodata_value=nodata_value, recursive=True)
 
     # Merge each band
     # [TODO] Each band could easily be merged in parallel
@@ -51,17 +58,11 @@ def merge(first: Dataset, second: Dataset, reference: Optional[Dataset] = None) 
         logger.debug("Started merging for band: {}".format(band_key))
         start_time = time.time()
 
-        # Modify non-matching nodata values
-        # Note: By default, the first dataset's "nodata" will be used here
-        if first.nodata != second.nodata:
-            second_band_data = second.bands[band_key]
-            np.where(second_band_data == second.nodata, first.nodata, second_band_data)
-
         # Actually perform merge
         merged = direct_merge(first_data=first.bands[band_key], first_transform=first.profile.data["transform"],
                               second_data=second.bands[band_key], second_transform=second.profile.data["transform"],
                               pixel_resolution=first.profile.data["pixel_dimensions"],
-                              nodata_value=first.nodata)
+                              nodata_value=nodata_value)
 
         # "Merge" with model if provided
         if reference is not None:
@@ -75,14 +76,14 @@ def merge(first: Dataset, second: Dataset, reference: Optional[Dataset] = None) 
             nodata_array = np.ndarray(shape=ref_band_data.shape, dtype=ref_band_data.dtype)
 
             # Fill the new substrate array with nodata values
-            nodata_array.fill(first.nodata)
+            nodata_array.fill(nodata_value)
 
             # Merge with nodata substrate array
             # [TODO] Find a way to reuse the already created "substrate" array rather than doubling memory usage
             merged = direct_merge(first_data=nodata_array, first_transform=ref_profile["transform"],
                                   second_data=merged[0], second_transform=merged[1],
                                   pixel_resolution=(first.profile.data["pixel_dimensions"]),
-                                  nodata_value=first.nodata)
+                                  nodata_value=nodata_value)
             del nodata_array
 
         new_bands[band_key] = merged[0]
@@ -98,7 +99,7 @@ def merge(first: Dataset, second: Dataset, reference: Optional[Dataset] = None) 
     new_profile.data["count"] = len(new_bands.keys())
 
     # [TODO] Implement proper metadata "diffing" for merge outputs
-    return Dataset(profile=new_profile, bands=new_bands, nodata=first.nodata, meta=None, subdatasets=None)
+    return Dataset(profile=new_profile, bands=new_bands, nodata=nodata_value, meta=None, subdatasets=None)
 
 
 def direct_merge(first_data: np.ndarray, first_transform: rio.transform,
