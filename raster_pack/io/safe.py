@@ -2,6 +2,7 @@
 import logging
 import re
 
+import numpy as np
 import rasterio as rio
 from typing import Optional, List
 from copy import deepcopy
@@ -95,6 +96,15 @@ def create_dataset(path: str, datatype: Optional[object] = None) -> Dataset:
             string=str(dataset.name)
         )
 
+        # Get all relevant "tags" (metadata from the original file)
+        dataset_tags = dataset.tags()
+
+        # Vitally important items
+        # [TODO] Fix assumption that all SAFE datasets use 16-bit unsigned ints
+        # WARNING: Rasterio doesn't seem to recognize nodata for SAFE files!
+        nodata_value = np.uint16(dataset_tags['SPECIAL_VALUE_NODATA'])
+        saturation_value = np.uint16(dataset_tags['SPECIAL_VALUE_SATURATED'])
+
         # Assemble metadata list
         meta = {
             "date": datetime.strptime(name_butchered.group('sensor_start_datetime'), '%Y%m%dT%H%M%S'),  # Get only the date using a regex
@@ -103,7 +113,8 @@ def create_dataset(path: str, datatype: Optional[object] = None) -> Dataset:
             "product_level": str(name_butchered.group('product_level')),
             "processing_baseline_number": str(name_butchered.group('processing_baseline_number')),
             "relative_orbit_number": str(name_butchered.group('relative_orbit_number')),
-            "product_discriminator": str(name_butchered.group('product_discriminator'))
+            "product_discriminator": str(name_butchered.group('product_discriminator')),
+            "saturated_value": saturation_value
         }
         profile = deepcopy(dataset.profile)
 
@@ -111,4 +122,4 @@ def create_dataset(path: str, datatype: Optional[object] = None) -> Dataset:
         profile.data["pixel_dimensions"] = dataset.res
 
         # Create and return new dataset
-        return Dataset(profile=profile, bands=output_dict, meta=meta, nodata=dataset.nodata)
+        return Dataset(profile=profile, bands=output_dict, meta=meta, nodata=nodata_value)
