@@ -31,6 +31,32 @@ class Dataset:
         self.meta = meta
         self.subdatasets = subdatasets
 
+    def switch_nodata(self, new_nodata_value: object, recursive: bool = False) -> None:
+        """Change nodata to a different value (modifies the array data!)
+
+        :param new_nodata_value: The new value to use as nodata
+        :param recursive: (Optional) Whether or not to run on subdatasets too
+        """
+
+        # Change for every band
+        for band_key, band_data in self.bands.items():
+            # Create a binary mask of nodata value locations (if nodata is specified in arguments)
+            nodata_mask = np.where(band_data.copy() == self.nodata, 1, 0)
+
+            # Create masked array
+            masked_array = np.ma.array(band_data, mask=nodata_mask, fill_value=new_nodata_value)
+
+            # Replace nodata values using MaskedArray filled method (uses mask to to insert nodata_value values)
+            self.bands[band_key] = masked_array.filled()
+
+        # If recursive, modify for subdatasets as well
+        if recursive and self.subdatasets is not None:
+            for subdataset in self.subdatasets:
+                subdataset.switch_nodata(new_nodata_value=new_nodata_value, recursive=True)
+
+        # Change nodata value property associated with self
+        self.nodata = new_nodata_value
+
 
 def combine(first: Dataset, second: Dataset, skip_duplicates: Optional[bool] = False, copy: bool = True) -> Dataset:
     """Combine one dataset with another compatible dataset
