@@ -88,6 +88,7 @@ def output_gtiff(dataset: Dataset, output_path: str, datatype: Optional[str] = r
         logger.debug("Started writing to file...")
         with rio.open(output_path, 'w', **dataset.profile) as dst:
             for ident, raw_data in enumerate(dataset.bands.values(), start=1):
+                logger.debug("Writing {} as band {}".format(list(dataset.bands.keys())[ident-1], ident))
                 dst.write_band(ident, raw_data.astype(datatype))
 
     logger.debug("Done writing to file.")
