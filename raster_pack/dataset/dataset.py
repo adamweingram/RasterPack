@@ -57,6 +57,30 @@ class Dataset:
         # Change nodata value property associated with self
         self.nodata = new_nodata_value
 
+    def split_bands(self, band_ids: List[str]) -> Dataset:
+        """Split off specific bands
+
+        Split specified bands off into a separate Dataset object.
+
+        :param band_ids: Keys corresponding to bands that should be split off
+        :return: New Dataset object with the same profile and metadata containing only the specified bands
+        """
+        # Create a dict that will form the bands property of the new Dataset object
+        bands_to_split = {band_key: self.bands[band_key] for band_key in band_ids}
+
+        # Remove bands from this Dataset object that will be split off
+        for band_key in band_ids:
+            del self.bands[band_key]
+
+        # Create a new Dataset object with similar settings (and new bands) and return
+        return Dataset(
+            profile=deepcopy(self.profile),
+            bands=bands_to_split,
+            nodata=deepcopy(self.nodata),
+            meta=deepcopy(self.meta),
+            subdatasets=None
+        )
+
 
 def combine(first: Dataset, second: Dataset, skip_duplicates: Optional[bool] = False, copy: bool = True) -> Dataset:
     """Combine one dataset with another compatible dataset
