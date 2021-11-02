@@ -111,6 +111,7 @@ def create_dataset(path: str, datatype: Optional[object] = None) -> Dataset:
             "resolution": deepcopy(dataset.res),
             "mission_id": str(name_butchered.group('mission_id')),
             "product_level": str(name_butchered.group('product_level')),
+            "tile_id": str(name_butchered.group('tile_id')),
             "processing_baseline_number": str(name_butchered.group('processing_baseline_number')),
             "relative_orbit_number": str(name_butchered.group('relative_orbit_number')),
             "product_discriminator": str(name_butchered.group('product_discriminator')),
